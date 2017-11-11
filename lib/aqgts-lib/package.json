@@ -1,6 +1,6 @@
 {
   "name": "aqgts-lib",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "My common library for my products",
   "private": true,
   "scripts": {
@@ -23,11 +23,11 @@
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "jasmine-node": "^1.14.5",
     "lodash": "^4.17.4",
     "mathjs": "^3.16.5",
-    "setimmediate": "^1.0.5",
     "text-encoding": "^0.6.4"
   }
 }
