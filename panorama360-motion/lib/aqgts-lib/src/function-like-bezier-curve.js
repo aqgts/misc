@@ -13,3 +13,7 @@ export default class FunctionLikeBezierCurve extends BezierCurve {
     return x => tToY(xToT(x));
   }
 }
+FunctionLikeBezierCurve.linear = new FunctionLikeBezierCurve(
+  new Vector2(20 / 127, 20 / 127),
+  new Vector2(107 / 127, 107 / 127)
+);

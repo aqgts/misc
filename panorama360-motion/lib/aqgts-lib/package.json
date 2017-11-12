@@ -1,11 +1,11 @@
 {
   "name": "aqgts-lib",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "My common library for my products",
   "private": true,
   "scripts": {
-    "build": "babel . -d dist --ignore node_modules,dist --source-maps",
-    "test": "npm run build && jasmine-node dist/spec",
+    "build:test": "babel . -d dist --ignore node_modules,dist --source-maps",
+    "test": "npm run build:test && jasmine-node dist/spec",
     "clean": "git clean -X -d -f"
   },
   "repository": {

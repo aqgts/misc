@@ -1,5 +1,7 @@
+import NullTextArea from "./null-text-area";
+
 export default class TextAreaWrapper {
-  constructor(textArea) {
+  constructor(textArea = new NullTextArea()) {
     this.textArea = textArea;
   }
   clear() {
