@@ -8,9 +8,12 @@ export default class TextAreaWrapper {
   _wait(resolve) {
     const previous = this._lastModified;
     const now = new Date().getTime();
-    this._lastModified = now;
-    if (now - previous <= 100) resolve();
-    else setTimeout(resolve, 0);
+    if (now - previous <= 100) {
+      resolve();
+    } else {
+      this._lastModified = now;
+      setTimeout(resolve, 0);
+    }
   }
   clear() {
     this.textArea.value = "";
