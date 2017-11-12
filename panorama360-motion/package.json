@@ -1,0 +1,41 @@
+{
+  "name": "misc-panorama360-motion",
+  "version": "1.0.0",
+  "description": "Make the motion for creating 360 degree panoramic images",
+  "private": true,
+  "scripts": {
+    "build": "browserify src/index.main.js --debug -t babelify | exorcist dist/index.main.js.map >dist/index.main.js",
+    "build:continuous": "watchify src/index.main.js -v --debug -t babelify -o 'exorcist dist/index.main.js.map >dist/index.main.js'",
+    "build:release": "browserify src/index.main.js -t babelify | uglifyjs --compress --output dist/index.main.js",
+    "build:test": "babel . -d dist --ignore node_modules,dist --source-maps",
+    "test": "npm run build:test && jasmine-node dist/spec",
+    "clean": "git clean -X -d -f"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/aqgts/misc.git"
+  },
+  "author": "aq",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/aqgts/misc/issues"
+  },
+  "homepage": "https://github.com/aqgts/misc",
+  "engines": {
+    "node": "^9.1.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babelify": "^8.0.0",
+    "browserify": "^14.5.0",
+    "exorcist": "^1.0.0",
+    "jasmine-node": "^1.14.5",
+    "lodash": "^4.17.4",
+    "mathjs": "^3.16.5",
+    "text-encoding": "^0.6.4",
+    "uglify-js": "^3.1.9",
+    "watchify": "^3.9.0"
+  }
+}

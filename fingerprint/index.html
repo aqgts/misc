@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>fingerprint</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12">
+          <h1>fingerprint</h1>
+          <div class="well">
+            <div class="form-group">
+              <label for="model">素体モデル</label>
+              <input type="file" value="ファイル選択" accept=".pmx" class="form-control" v-on:change="updateModelFile($event)" id="model">
+            </div>
+            <div class="form-group">
+              <label for="heightmap">Heightmap</label>
+              <input type="file" value="ファイル選択" class="form-control" v-on:change="updateHeightmapFile($event)" id="heightmap">
+            </div>
+            <div class="form-group">
+              <label for="loop_count">Catmull-Clark subdivisionを行う回数</label>
+              <input type="number" class="form-control" id="loop_count" v-model="loopCount">
+            </div>
+            <div class="form-group">
+              <label for="target_material_index">対象の材質インデックス</label>
+              <input type="number" class="form-control" id="target_material_index" v-model="targetMaterialIndex">
+            </div>
+            <div class="form-group">
+              <label for="log">システムからのメッセージ</label>
+              <textarea rows="8" readonly class="form-control" id="log"></textarea>
+            </div>
+            <button class="btn btn-primary" v-bind:disabled="isLoading || isProcessing" v-on:click="createModel">モデル生成</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@2.5.3/dist/vue.min.js" integrity="sha384-V3g5AcPUdecefoI4suVGdjcIZzMG129Xa/UtYeVxdJfFxCQ7jRZhi/NU3+bmPSWm" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js" integrity="sha384-FwbQ7A+X0UT99MG4WBjhZHvU0lvi67zmsIYxAREyhabGDXt1x0jDiwi3xubEYDYw" crossorigin="anonymous"></script>
+    <script>window.TextEncoder = window.TextDecoder = null;</script>
+    <script src="https://cdn.rawgit.com/inexorabletash/text-encoding/v0.6.4/lib/encoding-indexes.js" integrity="sha384-35I7P//wj0Kh7Kr25/CARCixpda3YoU/Jwg7zyw2KDbAaq0F0HbJjTfe8ft35k8S" crossorigin="anonymous"></script>
+    <script src="https://cdn.rawgit.com/inexorabletash/text-encoding/v0.6.4/lib/encoding.js" integrity="sha384-wB1b1TVi9Aqygd3fG3faulFZ5t7hnxLIHy/Jux0VVbrdgaFFXwFA1eZ8vSv4BKBV" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js" integrity="sha384-TpdKB3B5goqIpN8hSJ2cm+QBl4yttQBI3xd2DTP+7srlp14p3bKNYo4snjrrrBy5" crossorigin="anonymous"></script>
+    <script src="dist/index.main.js"></script>
+  </body>
+</html>

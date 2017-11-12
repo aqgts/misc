@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>hair</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12">
+          <h1>hair</h1>
+          <div class="well">
+            <div class="form-group">
+              <label for="n">毛の断面の丸さ（毛の断面を正何角形にするか）</label>
+              <input type="text" size="5" class="form-control" id="n" v-model="n">
+            </div>
+            <div class="form-group">
+              <label for="m">毛の縮れ具合1（毛を曲げる箇所の個数）</label>
+              <input type="text" size="5" class="form-control" id="m" v-model="m">
+            </div>
+            <div class="form-group">
+              <label for="maxDeg">毛の縮れ具合2（毛を曲げる箇所で付く角度の最大値）</label>
+              <input type="text" size="5" class="form-control" id="maxDeg" v-model="maxDeg">
+            </div>
+            <div class="form-group">
+              <label for="width">X方向の毛の本数</label>
+              <input type="text" size="5" class="form-control" id="width" v-model="width">
+            </div>
+            <div class="form-group">
+              <label for="height">Z方向の毛の本数</label>
+              <input type="text" size="5" class="form-control" id="height" v-model="height">
+            </div>
+            <div class="form-group">
+              <label for="red">毛の色の赤成分（0～1）</label>
+              <input type="text" size="5" class="form-control" id="red" v-model="red">
+            </div>
+            <div class="form-group">
+              <label for="green">毛の色の緑成分（0～1）</label>
+              <input type="text" size="5" class="form-control" id="green" v-model="green">
+            </div>
+            <div class="form-group">
+              <label for="blue">毛の色の青成分（0～1）</label>
+              <input type="text" size="5" class="form-control" id="blue" v-model="blue">
+            </div>
+            <div class="form-group">
+              <label for="log">システムからのメッセージ</label>
+              <textarea rows="8" readonly class="form-control" id="log"></textarea>
+            </div>
+            <button class="btn btn-primary" v-bind:disabled="!isLoaded || isProcessing" v-on:click="createModel">モデル生成</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@2.5.3/dist/vue.min.js" integrity="sha384-V3g5AcPUdecefoI4suVGdjcIZzMG129Xa/UtYeVxdJfFxCQ7jRZhi/NU3+bmPSWm" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js" integrity="sha384-FwbQ7A+X0UT99MG4WBjhZHvU0lvi67zmsIYxAREyhabGDXt1x0jDiwi3xubEYDYw" crossorigin="anonymous"></script>
+    <script>window.TextEncoder = window.TextDecoder = null;</script>
+    <script src="https://cdn.rawgit.com/inexorabletash/text-encoding/v0.6.4/lib/encoding-indexes.js" integrity="sha384-35I7P//wj0Kh7Kr25/CARCixpda3YoU/Jwg7zyw2KDbAaq0F0HbJjTfe8ft35k8S" crossorigin="anonymous"></script>
+    <script src="https://cdn.rawgit.com/inexorabletash/text-encoding/v0.6.4/lib/encoding.js" integrity="sha384-wB1b1TVi9Aqygd3fG3faulFZ5t7hnxLIHy/Jux0VVbrdgaFFXwFA1eZ8vSv4BKBV" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.16.5/math.min.js" integrity="sha384-TpdKB3B5goqIpN8hSJ2cm+QBl4yttQBI3xd2DTP+7srlp14p3bKNYo4snjrrrBy5" crossorigin="anonymous"></script>
+    <script src="dist/index.main.js"></script>
+  </body>
+</html>
