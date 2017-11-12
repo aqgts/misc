@@ -3,6 +3,17 @@ import NullTextArea from "./null-text-area";
 export default class TextAreaWrapper {
   constructor(textArea = new NullTextArea()) {
     this.textArea = textArea;
+    this._lastModified = new Date().getTime();
+  }
+  _wait(resolve) {
+    const previous = this._lastModified;
+    const now = new Date().getTime();
+    if (now - previous <= 100) {
+      resolve();
+    } else {
+      this._lastModified = now;
+      setTimeout(resolve, 0);
+    }
   }
   clear() {
     this.textArea.value = "";
@@ -10,7 +21,7 @@ export default class TextAreaWrapper {
   clearAsync() {
     return new Promise((resolve, reject) => {
       this.clear();
-      setImmediate(resolve);
+      this._wait(resolve);
     });
   }
   append(message) {
@@ -20,7 +31,7 @@ export default class TextAreaWrapper {
   appendAsync(message) {
     return new Promise((resolve, reject) => {
       this.append(message);
-      setImmediate(resolve);
+      this._wait(resolve);
     });
   }
   update(message) {
@@ -32,7 +43,7 @@ export default class TextAreaWrapper {
   }
   updateAsync(message) {
     return new Promise((resolve, reject) => {
-      if (this.update(message)) setImmediate(resolve);
+      if (this.update(message)) this._wait(resolve);
       else resolve();
     });
   }
@@ -50,7 +61,7 @@ export default class TextAreaWrapper {
   }
   progressAsync(...args) {
     return new Promise((resolve, reject) => {
-      if (this.progress(...args)) setImmediate(resolve);
+      if (this.progress(...args)) this._wait(resolve);
       else resolve();
     });
   }

@@ -1,6 +1,6 @@
 {
   "name": "aqgts-lib",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "My common library for my products",
   "private": true,
   "scripts": {
