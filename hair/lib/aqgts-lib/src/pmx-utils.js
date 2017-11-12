@@ -769,7 +769,7 @@ const PMXUtils = {
       const i1 = Math.floor(i / n);
       const i2 = i % n;
       const y = i1 * (l / m);
-      const r = isSharp || y <= l * 2 / 3 ? r0 : MyMath.lerp(r0, 0, (y / l - 2 / 3) * 3);
+      const r = !isSharp || y <= l * 2 / 3 ? r0 : MyMath.lerp(r0, 0, (y / l - 2 / 3) * 3);
       const theta = 2 * Math.PI / n * (i2 + 0.5 * (i1 % 2));
       return centers[i1].add(quaternions[i1].rotate(new Vector3(Math.cos(theta) * r, 0, Math.sin(theta) * r)));
     });
