@@ -1,0 +1,47 @@
+{
+  "name": "aqgts-lib",
+  "version": "2.0.0-alpha.1",
+  "description": "My common library for my products",
+  "private": true,
+  "scripts": {
+    "auto-generate": "node tools/build-test-helper.js && browserify src/global/pre-cdn.js -t babelify | uglifyjs -c -o dist/pre-cdn.js && browserify src/global/post-cdn.js -t babelify | uglifyjs -c -o dist/post-cdn.js",
+    "test": "npm run auto-generate && karma start --single-run",
+    "test:watch": "karma start",
+    "clean": "git clean -X -d -f"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/aqgts/aqgts-lib.git"
+  },
+  "author": "aq",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/aqgts/aqgts-lib/issues"
+  },
+  "homepage": "https://github.com/aqgts/aqgts-lib",
+  "engines": {
+    "node": "^9.5.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-plugin-istanbul": "^4.1.5",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babelify": "^8.0.0",
+    "browserify": "^16.1.0",
+    "jasmine-core": "^2.99.1",
+    "karma": "^2.0.0",
+    "karma-browserify": "^5.2.0",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-coverage": "^1.1.1",
+    "karma-jasmine": "^1.1.1",
+    "karma-spec-reporter": "0.0.32",
+    "uglify-js": "^3.3.12",
+    "watchify": "^3.10.0"
+  },
+  "dependencies": {
+    "base64-js": "^1.2.3",
+    "mime": "^2.2.0",
+    "uuid": "^3.2.1"
+  }
+}
