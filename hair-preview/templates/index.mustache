@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+  <head>
+    <title>hair-preview</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        font-family: Monospace;
+        background-color: #fff;
+        color: #000;
+        margin: 0px;
+        overflow: hidden;
+      }
+    </style>
+    <script src="dist/pre-cdn.js"></script>
+    {{#cdn}}
+      <script src="{{src}}"{{#integrity}} integrity="{{integrity}}" crossorigin="anonymous"{{/integrity}}></script>
+    {{/cdn}}
+    <script src="dist/post-cdn.js"></script>
+    <script src="dist/index.main.js"></script>
+  </head>
+  <body>
+    テクスチャ画像を選択してください: <input type="file" />
+    <input type="button" value="pmxファイルをダウンロード" />
+  </body>
+</html>

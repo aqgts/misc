@@ -1,2 +1,2 @@
 # misc
-Private miscellaneous scripts only for me
+Private miscellaneous scripts for me
