@@ -11,9 +11,9 @@ export default class VMD {
     if (this.modelName === this.constructor.CAMERA_MODEL_NAME) {
       io.writeString(this.constructor.CAMERA_MODEL_NAME, "shift_jis");
     } else {
-      io.writeNullTerminatedString(io, this.modelName, 20, "shift_jis");
+      io.writeNullTerminatedString(this.modelName, 20, "shift_jis");
     }
-    io.writeUint32(_.flatten(Array.from(this.keyFrames.bone.values())).length);
+    io.writeUint32([...this.keyFrames.bone.values()].map(keyFrames => keyFrames.length).reduce((sum, x) => sum + x, 0));
     this.keyFrames.bone.forEach(keyFrames => {
       keyFrames.forEach(keyFrame => {
         keyFrame.write(io);

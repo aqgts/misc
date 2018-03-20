@@ -1,4 +1,3 @@
-import "./register-global-variables";
 import Triangle3D from "../src/triangle-3d";
 import Vector3 from "../src/vector3";
 import DirectedLineSegment3D from "../src/directed-line-segment-3d";

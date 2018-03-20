@@ -1,4 +1,3 @@
-import "./register-global-variables";
 import DirectedLineSegment2D from "../src/directed-line-segment-2d";
 import Vector2 from "../src/vector2";
 import Polygon from "../src/polygon";

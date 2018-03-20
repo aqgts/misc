@@ -1,4 +1,3 @@
-import "./register-global-variables";
 import Plane from "../src/plane";
 import Vector3 from "../src/vector3";
 import Line3D from "../src/line-3d";
