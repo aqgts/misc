@@ -1,5 +1,3 @@
-import "./lodash-extension";
-
 export default {
   binom(n, k) {
     if (2 * k > n) k = n - k;

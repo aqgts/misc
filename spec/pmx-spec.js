@@ -1,17 +1,33 @@
-import "./register-global-variables";
-import fs from "fs";
+import getSymbolProperty from "./helpers/get-symbol-property";
+import BinaryUtils from "../src/binary-utils";
 import PMX from "../src/pmx";
 
 describe("PMX", () => {
-  it("読み込んだ内容をそのまま書き出すことができる", () => {
-    const inputBuffer = fs.readFileSync("spec/Yo_Miku_Ver1.2.1/Yo_Miku_Ver1.2.1_Normal.pmx");
-    const inputArrayBuffer = new ArrayBuffer(inputBuffer.length);
-    const inputUint8Array = new Uint8Array(inputArrayBuffer);
-    for (let i = 0; i < inputBuffer.length; ++i) {
-      inputUint8Array[i] = inputBuffer[i];
-    }
+  let inputUint8Array;
+  beforeAll(async () => {
+    inputUint8Array = await BinaryUtils.readBinaryFromFilePathAsync("base/spec/resources/Yo_Miku_Ver1.3.0/Yo_Miku_Ver1.3.0_Normal.pmx");
+  });
+  it("read/write", () => {
     const model = PMX.read(inputUint8Array);
     const outputUint8Array = model.write();
-    expect(outputUint8Array.length).toBe(inputUint8Array.length);
+    expect(outputUint8Array).toEqual(inputUint8Array);
+  });
+  it("clear", () => {
+    const model = PMX.read(inputUint8Array);
+    const _uuidToNode = getSymbolProperty(model, "uuidToNode");
+    const _backwardIndex = getSymbolProperty(model, "backwardIndex");
+    model.clear();
+    expect(model[_uuidToNode]).toEqual(Object.create(null));
+    expect(model[_backwardIndex]).toEqual(Object.create(null));
+  });
+  it("clone", () => {
+    const model = PMX.read(inputUint8Array);
+    const clone = model.clone();
+    const _uuidToNode = getSymbolProperty(model, "uuidToNode");
+    const _backwardIndex = getSymbolProperty(model, "backwardIndex");
+    expect(Object.keys(clone[_uuidToNode]).length).toBeGreaterThan(1);
+    expect(Object.keys(clone[_uuidToNode]).length).toBe(Object.keys(model[_uuidToNode]).length);
+    expect(Object.keys(clone[_backwardIndex]).length).toBeGreaterThan(0);
+    expect(Object.keys(clone[_backwardIndex]).length).toBe(Object.keys(model[_backwardIndex]).length);
   });
 });

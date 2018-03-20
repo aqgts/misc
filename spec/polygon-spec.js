@@ -1,4 +1,3 @@
-import "./register-global-variables";
 import Polygon from "../src/polygon";
 import Vector2 from "../src/vector2";
 

@@ -2,12 +2,31 @@ import Vector3 from "./vector3";
 import Vector4 from "./vector4";
 import MyMath from "./my-math";
 
+const _yxzEuler = Symbol("yxzEuler");
+const _value = {
+  w: Symbol("w"),
+  x: Symbol("x"),
+  y: Symbol("y"),
+  z: Symbol("z"),
+};
 export default class Quaternion {
   constructor(w, x, y, z) {
-    this.w = w;
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this[_value.w] = w;
+    this[_value.x] = x;
+    this[_value.y] = y;
+    this[_value.z] = z;
+  }
+  get w() {
+    return this[_value.w];
+  }
+  get x() {
+    return this[_value.x];
+  }
+  get y() {
+    return this[_value.y];
+  }
+  get z() {
+    return this[_value.z];
   }
   clone() {
     return new this.constructor(this.w, this.x, this.y, this.z);
@@ -72,6 +91,8 @@ export default class Quaternion {
     return new Vector4(this.x, this.y, this.z, this.w);
   }
   yxzEulerAngles() {
+    if (_yxzEuler in this) return this[_yxzEuler];
+
     const cosPitchSinYaw = 2 * (this.w * this.y + this.x * this.z);
     const cosPitchCosYaw = 1 - 2 * (this.x * this.x + this.y * this.y);
     const sinPitch = 2 * (this.w * this.x - this.y * this.z);
@@ -132,9 +153,11 @@ export default class Quaternion {
     return q0.multiply(q0.power(-1).multiply(q1).power(t));
   }
   static yxzEuler(yaw, pitch, roll) {
-    return this.angleAxis(yaw, new Vector3(0, 1, 0))
+    const result = this.angleAxis(yaw, new Vector3(0, 1, 0))
       .multiply(this.angleAxis(pitch, new Vector3(1, 0, 0)))
       .multiply(this.angleAxis(roll, new Vector3(0, 0, 1)));
+    result[_yxzEuler] = [yaw, pitch, roll];
+    return result;
   }
 }
 Quaternion.identity = new Quaternion(1, 0, 0, 0);
