@@ -43,7 +43,7 @@ export default class ObservableLinkedChain extends LinkedChain {
   splice(targetValue, howMany, ...newValues) {
     if (!this.has(targetValue)) return this;
     const deletedValues = this.slice(targetValue, false, howMany);
-    const addedValues = [...new Set(newValues)].filter(value => deleteValues.has(value) || !this.has(value));
+    const addedValues = [...new Set(newValues)].filter(value => deletedValues.has(value) || !this.has(value));
     const result = super.splice(targetValue, howMany, ...newValues);
     for (const deletedValue of deletedValues) {
       this[_onDelete].call(this, deletedValue);

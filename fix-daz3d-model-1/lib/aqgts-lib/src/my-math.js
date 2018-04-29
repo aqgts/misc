@@ -1,4 +1,7 @@
 export default {
+  mod(x, y) {
+    return (x % y + y) % y;
+  },
   binom(n, k) {
     if (2 * k > n) k = n - k;
     if (k === 0) return 1;

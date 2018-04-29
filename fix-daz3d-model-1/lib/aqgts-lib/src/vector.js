@@ -39,7 +39,7 @@ export default class Vector {
     return this === other || (this.length === other.length && new Array(this.length).fill().every((_, i) => this[i] === other[i]));
   }
   toString() {
-    return this.toArray().join(",");
+    return `(${this.toArray().join(", ")})`;
   }
   toArray() {
     return Array.from(this);

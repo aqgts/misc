@@ -2,7 +2,7 @@ import getSymbolProperty from "./helpers/get-symbol-property";
 import BinaryUtils from "../src/binary-utils";
 import PMX from "../src/pmx";
 
-describe("PMX", () => {
+xdescribe("PMX", () => {
   let inputUint8Array;
   beforeAll(async () => {
     inputUint8Array = await BinaryUtils.readBinaryFromFilePathAsync("base/spec/resources/Yo_Miku_Ver1.3.0/Yo_Miku_Ver1.3.0_Normal.pmx");

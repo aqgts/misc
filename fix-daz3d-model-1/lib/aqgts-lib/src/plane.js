@@ -1,6 +1,7 @@
 import Vector3 from "./vector3";
 import Line3D from "./line-3d";
 import Triangle3D from "./triangle-3d";
+import Polygon3D from "./polygon-3d";
 
 export default class Plane {
   constructor(a, b, c, d) {
@@ -15,7 +16,7 @@ export default class Plane {
   contains(p) {
     return this.a * p.x + this.b * p.y + this.c * p.z + this.d === 0;
   }
-  normal() {
+  normal() { // Planeには向きがないので、法線がどちら向きであるかは保証されない
     return new Vector3(this.a, this.b, this.c).normalize();
   }
   isParallelTo(other) { // 同一平面である場合は含まない
@@ -67,6 +68,26 @@ export default class Plane {
       throw new Error("Unknown type");
     }
   }
+  projection(other) {
+    if (other instanceof Vector3) {
+      const n = new Vector3(this.a, this.b, this.c);
+      return other.subtract(n.multiply((other.innerProduct(n) + this.d) / n.squaredNorm()));
+    } else if (other instanceof Polygon3D) {
+      if (this.normal().innerProduct(other.normal()) !== 0) {
+        return new other.constructor(...other.points.map(point => this.projection(point)));
+      } else {
+        throw new Error("Currently not implemented");
+      }
+    } else if (other instanceof Line3D) {
+      if (!this.normal().crossProduct(other.d).equals(Vector3.zero)) {
+        return Line3D.through(this.projection(other.a), this.projection(other.a.add(other.d)));
+      } else {
+        return this.projection(other.a);
+      }
+    } else {
+      throw new Error("Unknown type");
+    }
+  }
   toString() {
     return `${this.a}x${this.b < 0 ? "-" : "+"}${Math.abs(this.b)}y${this.c < 0 ? "-" : "+"}${Math.abs(this.c)}z${this.d < 0 ? "-" : "+"}${Math.abs(this.d)}=0`;
   }
@@ -75,6 +96,6 @@ export default class Plane {
     if (p2.equals(p3)) throw new Error("p2 is identical to p3");
     if (p3.equals(p1)) throw new Error("p3 is identical to p1");
     const normal = p2.subtract(p1).crossProduct(p3.subtract(p1));
-    return new this(normal.x, normal.y, normal.z, normal.x * p1.x + normal.y * p1.y + normal.z * p1.z);
+    return new this(normal.x, normal.y, normal.z, -normal.x * p1.x - normal.y * p1.y - normal.z * p1.z);
   }
 }

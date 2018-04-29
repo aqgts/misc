@@ -1,8 +1,15 @@
 import path from "path";
+import Color from "color";
 import PMX from "./pmx";
 import ExtendedPMX from "./extended-pmx";
 import BinaryUtils from "./binary-utils";
+import MyMath from "./my-math";
 import ImageWrapper from "./image-wrapper";
+import TextAreaWrapper from "./text-area-wrapper";
+import Vector2 from "./vector2";
+import Vector3 from "./vector3";
+import Triangle2D from "./triangle-2d";
+import Triangle3D from "./triangle-3d";
 
 // TODO: TGAのサポートが不完全
 export default class UnifiedPMX {
@@ -11,39 +18,145 @@ export default class UnifiedPMX {
     this.model.unifiedPMX = this;
     this.textureMap = textureMap;
   }
-  createThreeMeshAsync() {
-    return new Promise((resolve, reject) => {
-      const datauriMap = new Map([...this.textureMap].map(([filePath, imageWrapper]) => [filePath, imageWrapper.canvas.toDataURL()]));
-      const manager = new THREE.LoadingManager();
-      manager.setURLModifier(filePath => {
-        if (filePath.startsWith("data:")) {
-          return filePath;
-        } else if (datauriMap.has(filePath)) {
-          return datauriMap.get(filePath);
-        } else {
-          throw new Error(`Unknown texture path: ${filePath}`);
-        }
+  clone() {
+    return new this.constructor(
+      this.model.clone(),
+      new Map([...this.textureMap].map(([filePath, imageWrapper]) => [filePath, imageWrapper.clone()]))
+    );
+  }
+  async createThreeMeshAsync() {
+    const datauriMap = new Map(await Promise.all([...this.textureMap].map(async ([filePath, imageWrapper]) => {
+      const mimeType = BinaryUtils.getMIMEType(filePath);
+      const blob = await new Promise((resolve, reject) => {
+        imageWrapper.getCanvas().toBlob(resolve, mimeType);
       });
-      const loader = new THREE.MMDLoader(manager);
-      resolve(loader.createModel(this.model.write().buffer, "pmx", "", xhr => {
-        if (xhr.lengthComputable) {
-          const percentComplete = xhr.loaded / xhr.total * 100;
-          console.log(`${Math.round(percentComplete, 2)}% downloaded`);
-        }
-      }, reject));
+      return [filePath, URL.createObjectURL(blob)];
+    })));
+    const manager = new THREE.LoadingManager();
+    manager.setURLModifier(filePath => {
+      if (filePath.startsWith("data:")) {
+        return filePath;
+      } else if (datauriMap.has(filePath)) {
+        return datauriMap.get(filePath);
+      } else {
+        throw new Error(`Unknown texture path: ${filePath}`);
+      }
+    });
+    const loader = new THREE.MMDLoader(manager);
+    return loader.createModel(this.model.write().buffer, "pmx", "", xhr => {
+      if (xhr.lengthComputable) {
+        const percentComplete = xhr.loaded / xhr.total * 100;
+        console.log(`${Math.round(percentComplete, 2)}% downloaded`);
+      }
+    }, error => {
+      console.warn(error.toString());
     });
   }
+  addHairMaterial(color) {
+    const filePath = "hair_surface.png";
+    this.textureMap.set(filePath, (() => {
+      function createLine(y) {
+        const line = new Array(256);
+        line[0] = 0;
+        for (let x = 1; x < 256; x++) {
+          const upRate = ((power, coefficient) => {
+            const absPower = Math.abs(power);
+            if (power > 0) {
+              return absPower + (1 - absPower) * coefficient;
+            } else if (power < 0) {
+              return (1 - absPower) * coefficient;
+            } else {
+              return 0.5;
+            }
+          })(-line[x - 1] / (256 - x), 0.5 * (1 - (line[x - 1] / 7) ** 3));
+          const diff = Math.random() < upRate ? +1 : -1;
+          line[x] = line[x - 1] + diff;
+        }
+        const shift = Math.floor(Math.random() * 256);
+        for (let x = 0; x < shift; x++) {
+          line.unshift(line.pop());
+        }
+        return line;
+      }
+      const lines = [];
+      for (let y = 0; y < 256; y += 16) {
+        lines.push(createLine(y).map(diff => (y + diff + 256) % 256));
+      }
+      const verticalLines = new Array(256).fill().map(() => []);
+      for (let x = 0; x < 256; x++) {
+        for (let i = 0; i < lines.length; i++) {
+          verticalLines[x].push(lines[i][x]);
+        }
+      }
+      const pixels = new Array(256).fill().map(() => new Array(256));
+      for (let x = 0; x < 256; x++) {
+        for (let i = 0; i < lines.length; i++) {
+          pixels[verticalLines[x][i]][x] = Color.rgb(0, 0, 0);
+          const n = (verticalLines[x][(i + 1) % lines.length] - verticalLines[x][i] + 256) % 256
+          for (let j = 1; j < n; j++) {
+            const y = (verticalLines[x][i] + j) % 256;
+            const lerp = 0.5 * (1 - Math.min(j, 5) / 5);
+            pixels[y][x] = Color.rgb(MyMath.lerp(color.red(), 255, lerp), MyMath.lerp(color.green(), 255, lerp), MyMath.lerp(color.blue(), 255, lerp));
+          }
+        }
+      }
+      
+      const canvas = document.createElement("canvas");
+      canvas.width = 256;
+      canvas.height = 256;
+      const context = canvas.getContext("2d");
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          context.fillStyle = pixels[y][x].string();
+          context.fillRect(x, y, 1, 1);
+        }
+      }
+      const imageWrapper = new ImageWrapper(canvas);
+      imageWrapper.applyGaussianBlur(0.5);
+      return imageWrapper;
+    })());
+    let texture = this.model.textures.find(t => t.filePath === filePath);
+    if (texture === undefined) {
+      texture = this.model.createNode(this.model.constructor.Texture).init(filePath);
+      this.model.textures.push(texture);
+    }
+    const material = this.model.createNode(this.model.constructor.Material).init(
+      "毛", "hair",
+      {red: 1, green: 1, blue: 1, alpha: 1},
+      {red: 0, green: 0, blue: 0, coefficient: 5},
+      {red: 0.5, green: 0.5, blue: 0.5},
+      false, true, true, true, false,
+      {red: 0, green: 0, blue: 0, alpha: 1, size: 0},
+      texture.getUUID(),
+      this.model.createNode(this.model.constructor.Material.SphereTexture).init(null, "disabled"),
+      this.model.createNode(this.model.constructor.Material.ToonTexture).init(false, null),
+      "", []
+    );
+    this.model.materials.push(material);
+    return material;
+  }
+  removeOrphanTextures() {
+    this.model.removeOrphanTextures();
+    const activeFilePathSet = new Set(this.model.textures.map(texture => texture.filePath));
+    for (const filePath of [...this.textureMap.keys()].filter(filePath => !activeFilePathSet.has(filePath))) {
+      this.textureMap.delete(filePath);
+    }
+  }
   async exportToZipAsync(pmxFileName) {
-    const encoder = new TextEncoder("shift_jis", {NONSTANDARD_allowLegacyEncoding: true});
     const zip = new JSZip();
-    for (const texture of this.model.textures) {
-      const filePath = texture.filePath.split(/[\/\\]/);
-      filePath.slice(0, -1).reduce((z, name) => z.folder(name), zip).file(
-        filePath[filePath.length - 1],
-        await texture.getImage().exportToBinaryAsync(path.extname(texture.filePath))
+    for (const [filePath, imageWrapper] of this.textureMap) {
+      const filePathElements = filePath.split(/[\/\\]/);
+      filePathElements.slice(0, -1).reduce((z, name) => z.folder(name), zip).file(
+        filePathElements[filePathElements.length - 1],
+        await imageWrapper.exportToBinaryAsync(path.extname(filePath))
       );
     }
     zip.file(pmxFileName, this.model.write());
+    return zip;
+  }
+  async exportToBinaryAsync(pmxFileName) {
+    const encoder = new TextEncoder("shift_jis", {NONSTANDARD_allowLegacyEncoding: true});
+    const zip = await this.exportToZipAsync(pmxFileName);
     return await zip.generateAsync({
       type: "uint8array",
       encodeFileName: fileName => encoder.encode(fileName),

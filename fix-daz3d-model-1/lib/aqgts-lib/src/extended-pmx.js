@@ -219,6 +219,38 @@ const MeshInfo = (() => {
 })();
 
 export default class ExtendedPMX extends PMX {
+  changeScale(scale) {
+    for (const vertex of this.vertices) {
+      vertex.position = vertex.position.multiply(scale);
+    }
+    for (const bone of this.bones) {
+      bone.position = bone.position.multiply(scale);
+      if (bone.connectionType === "position") bone.connection = bone.connection.multiply(scale);
+    }
+    for (const morph of this.morphs) {
+      switch (morph.type) {
+      case "vertex":
+      case "bone":
+        for (const offset of morph.offsets) {
+          offset.displacement = offset.displacement.multiply(scale);
+        }
+        break;
+      }
+    }
+    for (const rigidBody of this.rigidBodies) {
+      rigidBody.size = rigidBody.size.multiply(scale);
+      rigidBody.position = rigidBody.position.multiply(scale);
+      rigidBody.mass = rigidBody.mass * scale ** 3;
+    }
+    for (const joint of this.joints) {
+      if (joint.concreteJoint instanceof PMX.Joint.ConcreteJoint.Spring6DOF) {
+        joint.concreteJoint.position = joint.concreteJoint.position.multiply(scale);
+        joint.concreteJoint.lowerLimitInMoving = joint.concreteJoint.lowerLimitInMoving.multiply(scale);
+        joint.concreteJoint.upperLimitInMoving = joint.concreteJoint.upperLimitInMoving.multiply(scale);
+        joint.concreteJoint.springConstantInMoving = joint.concreteJoint.springConstantInMoving.multiply(scale ** 3);
+      }
+    }
+  }
   createVirtualVertex(pairs) {
     return new VirtualVertex(pairs);
   }
@@ -229,7 +261,7 @@ export default class ExtendedPMX extends PMX {
     const newVertex = virtualVertex.toVertex();
     this.vertices.push(newVertex);
 
-    const vertexUUIDToBlendRate = new Map(virtualVertex.pairs);
+    const vertexToBlendRate = new Map(virtualVertex.pairs);
     const morphToNewDisplacement = new Map();
     for (const vertex of virtualVertex.pairs.map(([vertex,]) => vertex)) {
       for (const {node, propertyNames} of vertex.getReferringNodes()) {
@@ -238,7 +270,7 @@ export default class ExtendedPMX extends PMX {
           const offset = node;
           const morph = offset.getParentNode();
           if (!morphToNewDisplacement.has(morph)) morphToNewDisplacement.set(morph, morph.type === "vertex" ? Vector3.zero : Vector4.zero);
-          morphToNewDisplacement.set(morph, morphToNewDisplacement.get(morph).add(offset.displacement.multiply(vertexUUIDToBlendRate.get(offset.vertexUUID))));
+          morphToNewDisplacement.set(morph, morphToNewDisplacement.get(morph).add(offset.displacement.multiply(vertexToBlendRate.get(offset.getVertexNode()))));
         }
       }
     }
@@ -306,6 +338,10 @@ export default class ExtendedPMX extends PMX {
           edgePoint = this.materializeVirtualVertex(
             faces.map(face => facePointMap.get(face)).concat(edge).map(vertex => [vertex, 1 / 4])
           );
+          const facesIgnoringVertexKey = meshInfo.getFacesFrom(edge, false);
+          if (facesIgnoringVertexKey.length === 1) {
+            edgePoint.uv = edge[0].uv.add(edge[1].uv).divide(2);
+          }
           break;
         default:
           const errorEdgeJSON = JSON.stringify(_.sortBy(edge.map(errorVertex => this.vertices.findIndex(vertex => vertex === errorVertex)), _.identity));
@@ -374,91 +410,62 @@ export default class ExtendedPMX extends PMX {
       await core();
     }
 
-    for (const material of this.materials) {
+    await logger.progressAsync("面分割中...", targets.map(material => [...material.faces].filter(face => face.vertexUUIDs.length === 4).length).reduce(_.add, 0));
+    for (const material of targets) {
       for (const face of [...material.faces].filter(face => face.vertexUUIDs.length === 4)) {
         const [a, b, c, d] = face.vertexUUIDs;
         material.faces.delete(face);
         material.faces.push(this.createNode(this.constructor.Material.Face).init([a, b, d]));
         material.faces.push(this.createNode(this.constructor.Material.Face).init([b, c, d]));
+        logger.progressAsync();
       }
     }
     await logger.appendAsync("Catmull-Clark subdivision完了");
   }
-  addHairMaterial(...args) {
-    if (args.length === 1) {
-      const [filePath] = args;
-      let texture = this.textures.find(t => t.filePath === filePath);
-      if (texture === undefined) {
-        texture = this.createNode(this.constructor.Texture).init(filePath);
-        this.textures.push(texture);
-      }
-      const material = this.createNode(this.constructor.Material).init(
-        "毛", "hair",
-        {red: 1, green: 1, blue: 1, alpha: 1},
-        {red: 1, green: 1, blue: 1, coefficient: 5},
-        {red: 0.8, green: 0.8, blue: 0.8},
-        false, true, true, true, false,
-        {red: 0, green: 0, blue: 0, alpha: 1, size: 0},
-        texture.getUUID(),
-        this.createNode(this.constructor.Material.SphereTexture).init(null, "disabled"),
-        this.createNode(this.constructor.Material.ToonTexture).init(false, null),
-        "", []
-      );
-      this.materials.push(material);
-      return material;
-    } else if (args.length === 3) {
-      const [red, green, blue] = args;
-      const material = this.createNode(this.constructor.Material).init(
-        "毛", "hair",
-        {red: red * 0.6, green: green * 0.6, blue: blue * 0.6, alpha: 1},
-        {red: 1, green: 1, blue: 1, coefficient: 5},
-        {red: red * 0.4, green: green * 0.4, blue: blue * 0.4},
-        false, true, true, true, false,
-        {red: 0, green: 0, blue: 0, alpha: 1, size: 0}, null,
-        this.createNode(this.constructor.Material.SphereTexture).init(null, "disabled"),
-        this.createNode(this.constructor.Material.ToonTexture).init(false, null),
-        "", []
-      );
-      this.materials.push(material);
-      return material;
-    } else {
-      throw new Error("Invalid arguments length");
-    }
-  }
   // material…毛の材質
   // positionOrigin…毛根の中心点
   // normalOrigin…毛根から毛の末端方向へ伸びるベクトル
-  // localQuaternions…毛の節に付ける回転（毛根の1つ上の節から末端まで定義する）
+  // localQuaternions…毛の節に付ける回転（毛根の1つ上から末端まで定義する）
   // r0…毛根における毛断面の半径
   // l…毛の長さ
   // n…毛断面を正何角形にするか
   // weight…毛を構成する頂点のウェイト
   // isSharp…毛の末端1/3を徐々に細らせるか
-  addHair(material, positionOrigin, normalOrigin, localQuaternions, r0, l, n, weight, isSharp) {
-    const quaternions = localQuaternions.reduce((arr, q) => {
-      arr.push(arr[arr.length - 1].multiply(q));
-      return arr;
-    }, [Quaternion.fromToRotation(new Vector3(0, 1, 0), normalOrigin)]);
+  // morphInfo…モーフごとの、移動後の原点と法線
+  addHair(material, positionOrigin, normalOrigin, localQuaternions, r0, l, n, weight, isSharp, morphInfo) {
+    // 毛を何分割するか
     const m = localQuaternions.length;
-    const centers = new Array(m).fill().reduce((arr, v, i) => {
-      arr.push(arr[arr.length - 1].add(quaternions[i + 1].rotate(new Vector3(0, l / m, 0))));
-      return arr;
-    }, [positionOrigin]);
-    const positions = new Array(n * (m + 1)).fill().map((_, i) => {
-      const i1 = Math.floor(i / n);
-      const i2 = i % n;
+    function init(currentPositionOrigin, currentNormalOrigin) {
+      const quaternions = localQuaternions.reduce((arr, q) => {
+        arr.push(arr[arr.length - 1].multiply(q));
+        return arr;
+      }, [Quaternion.fromToRotation(new Vector3(0, 1, 0), currentNormalOrigin)]);
+      const centers = new Array(m).fill().reduce((arr, v, i) => {
+        arr.push(arr[arr.length - 1].add(quaternions[i + 1].rotate(new Vector3(0, l / m, 0))));
+        return arr;
+      }, [currentPositionOrigin]);
+      const positions = new Array(n * (m + 1)).fill().map((_, i) => {
+        const i1 = Math.floor(i / n);
+        const i2 = i % n;
+        const y = i1 * (l / m);
+        const r = !isSharp || y <= l * 2 / 3 ? r0 : MyMath.lerp(r0, 0, (y / l - 2 / 3) * 3);
+        const theta = 2 * Math.PI / n * (i2 + 0.5 * (i1 % 2));
+        return centers[i1].add(quaternions[i1].rotate(new Vector3(Math.cos(theta) * r, 0, Math.sin(theta) * r)));
+      });
+      return {quaternions, centers, positions};
+    }
+    const {quaternions, centers, positions} = init(positionOrigin, normalOrigin);
+    const morphToOffsets = new Map([...morphInfo].map(([morph, {positionOrigin: newPositionOrigin, normalOrigin: newNormalOrigin}]) => {
+      const {positions: newPositions} = init(newPositionOrigin, newNormalOrigin);
+      return [morph, _.zip(positions, newPositions).map(([oldPosition, newPosition]) => newPosition.subtract(oldPosition))];
+    }));
+    const uvs = new Array((n + 1) * (m + 1)).fill().map((_, i) => {
+      const i1 = Math.floor(i / (n + 1));
+      const i2 = i % (n + 1);
       const y = i1 * (l / m);
       const r = !isSharp || y <= l * 2 / 3 ? r0 : MyMath.lerp(r0, 0, (y / l - 2 / 3) * 3);
       const theta = 2 * Math.PI / n * (i2 + 0.5 * (i1 % 2));
-      return centers[i1].add(quaternions[i1].rotate(new Vector3(Math.cos(theta) * r, 0, Math.sin(theta) * r)));
-    });
-    const uvs = new Array(n * (m + 1)).fill().map((_, i) => {
-      const i1 = Math.floor(i / n);
-      const i2 = i % n;
-      const y = i1 * (l / m);
-      const r = !isSharp || y <= l * 2 / 3 ? r0 : MyMath.lerp(r0, 0, (y / l - 2 / 3) * 3);
-      const theta = 2 * Math.PI / n * (i2 + 0.5 * (i1 % 2));
-      const u = (r * theta) / (2 * Math.PI * r);
+      const u = theta / (2 * Math.PI);
       const v = (l - y) / (2 * Math.PI * r0);
       return new Vector2(u, v);
     });
@@ -502,11 +509,13 @@ export default class ExtendedPMX extends PMX {
           .normalize();
       }
     });
-    const vertices = new Array(n * (m + 1)).fill().map((_, i) => {
+    const vertices = new Array((n + 1) * (m + 1)).fill().map((_, i) => {
+      const i1 = Math.floor(i / (n + 1));
+      const i2 = i % (n + 1);
       return this.createNode(this.constructor.Vertex).init(
-        positions[i],
-        normals[i],
-        uvs[i],
+        positions[i1 * n + i2 % n],
+        normals[i1 * n + i2 % n],
+        uvs[i1 * (n + 1) + i2],
         [],
         weight.clone(),
         0,
@@ -519,18 +528,123 @@ export default class ExtendedPMX extends PMX {
       const i3 = i % n;
       if (isSharp ? (i1 < m && i2 === 0) || i1 === m : i2 === 0) {
         return this.createNode(this.constructor.Material.Face).init([
-          i1 * n + (i3 + 1) % n,
-          i1 * n + i3,
-          (i1 + 1) * n + [i3, (i3 + 1) % n][i1 % 2]
+          i1 * (n + 1) + i3 + 1,
+          i1 * (n + 1) + i3,
+          (i1 + 1) * (n + 1) + [i3, i3 + 1][i1 % 2]
         ].map(j => vertices[j].getUUID()));
       } else {
         return this.createNode(this.constructor.Material.Face).init([
-          i1 * n + i3,
-          (i1 + 1) * n + [(i3 + n - 1) % n, i3][i1 % 2],
-          (i1 + 1) * n + [i3, (i3 + 1) % n][i1 % 2]
+          i1 * (n + 1) + [i3 + 1, i3][i1 % 2],
+          (i1 + 1) * (n + 1) + i3,
+          (i1 + 1) * (n + 1) + i3 + 1
         ].map(j => vertices[j].getUUID()));
       }
     }));
+    for (const [morph, offsets] of morphToOffsets) {
+      for (const [vertex, i] of vertices.map((vertex, i) => [vertex, i])) {
+        const i1 = Math.floor(i / (n + 1));
+        const i2 = i % (n + 1);
+        morph.offsets.push(this.createNode(this.constructor.Morph.Offset.Vertex).init(vertex.getUUID(), offsets[i1 * n + i2 % n]));
+      }
+    }
+  }
+  removeOrphanVertices() {
+    outer:
+    for (const vertex of [...this.vertices]) {
+      for (const {node, propertyNames} of vertex.getReferringNodes()) {
+        if (node instanceof PMX.Material.Face && propertyNames[0] === "vertexUUIDs") {
+          continue outer;
+        }
+      }
+      this.vertices.delete(vertex);
+    }
+  }
+  removeOrphanTextures() {
+    outer:
+    for (const texture of [...this.textures]) {
+      for (const {node, propertyNames} of texture.getReferringNodes()) {
+        continue outer;
+      }
+      this.textures.delete(texture);
+    }
+  }
+  addMasterBone() {
+    if (this.bones.length > 0) {
+      const centerBone = this.bones.head();
+      const masterBone = centerBone.clone();
+      const leftIKBone = this.bones.find(bone => bone.japaneseName === "左足ＩＫ");
+      const rightIKBone = this.bones.find(bone => bone.japaneseName === "右足ＩＫ");
+      masterBone.japaneseName = "全ての親";
+      masterBone.englishName = "master";
+      masterBone.position = Vector3.zero;
+      masterBone.parentBoneUUID = null;
+      masterBone.connectionType = "bone";
+      masterBone.connectionUUID = centerBone.getUUID();
+      this.bones.unshift(masterBone);
+      centerBone.parentBoneUUID = masterBone.getUUID();
+      leftIKBone.parentBoneUUID = masterBone.getUUID();
+      rightIKBone.parentBoneUUID = masterBone.getUUID();
+      this.displayElementGroups.head().elements.clear();
+      this.displayElementGroups.head().elements.push(
+        this.createNode(this.constructor.DisplayElementGroup.DisplayElement).init("bone", masterBone.getUUID()),
+      );
+      this.displayElementGroups.splice(
+        this.displayElementGroups.find(displayElementGroup => displayElementGroup.japaneseName === "表情"),
+        +0,
+        this.createNode(this.constructor.DisplayElementGroup).init("センター", "center", false, [
+          this.createNode(this.constructor.DisplayElementGroup.DisplayElement).init("bone", centerBone.getUUID()),
+        ]),
+      );
+    } else {
+      const masterBone = this.createNode(this.constructor.Bone).init(
+        "全ての親",
+        "master",
+        Vector3.zero,
+        null,
+        0,
+        Vector3.zero,
+        true,
+        true,
+        true,
+        true,
+        null,
+        0,
+        false,
+        false,
+        null,
+        null,
+        null,
+        false,
+        null
+      );
+      this.bones.push(masterBone);
+      this.displayElementGroups.push(
+        this.createNode(this.constructor.DisplayElementGroup).init("Root", "Root", true, [
+          this.createNode(this.constructor.DisplayElementGroup.DisplayElement).init("bone", masterBone.getUUID()),
+        ]),
+        this.createNode(this.constructor.DisplayElementGroup).init("表情", "Exp", true, []),
+      );
+    }
+  }
+  createVertexMorphDictionary(targetVertices) {
+    const map = new Map(targetVertices.map(targetVertex => [targetVertex, new Map()]));
+    for (const targetVertex of targetVertices) {
+      for (const {node, propertyNames} of targetVertex.getReferringNodes()) {
+        if (node instanceof PMX.Morph.Offset.Vertex && propertyNames[0] === "vertexUUID") {
+          map.get(targetVertex).set(node.getParentNode(), targetVertex.position.add(node.displacement));
+        }
+      }
+    }
+    return function result(vertex, morph) {
+      if (morph === undefined) {
+        if (!map.has(vertex)) throw new Error("Out of scope");
+        return map.get(vertex);
+      } else {
+        const innerMap = result(vertex);
+        if (innerMap.has(morph)) return innerMap.get(morph);
+        else return vertex.position;
+      }
+    };
   }
   static createEmptyModel() {
     return this.read(new Uint8Array([
@@ -571,8 +685,29 @@ ExtendedPMX.Texture = class Texture extends PMX.Texture {};
 ExtendedPMX.Material = class Material extends PMX.Material {};
 ExtendedPMX.Material.SphereTexture = class SphereTexture extends PMX.Material.SphereTexture {};
 ExtendedPMX.Material.ToonTexture = class ToonTexture extends PMX.Material.ToonTexture {};
-ExtendedPMX.Material.Face = class Face extends PMX.Material.Face {};
-ExtendedPMX.Bone = class Bone extends PMX.Bone {};
+ExtendedPMX.Material.Face = class Face extends PMX.Material.Face {
+  getEdgeUUIDs() {
+    const edgeUUIDs = [];
+    for (let i = 0; i < this.vertexUUIDs.length; i++) {
+      edgeUUIDs.push([this.vertexUUIDs[i], this.vertexUUIDs[(i + 1) % this.vertexUUIDs.length]]);
+    }
+    return edgeUUIDs;
+  }
+  getEdgeNodes() {
+    return this.getEdgeUUIDs().map(edgeUUID => edgeUUID.map(vertexUUID => this.getRootNode().getNode(vertexUUID)));
+  }
+};
+ExtendedPMX.Bone = class Bone extends PMX.Bone {
+  getChildBoneNodes() {
+    const result = [];
+    for (const {node, propertyNames} of this.getReferringNodes()) {
+      if (node instanceof PMX.Bone && propertyNames[0] === "parentBoneUUID") {
+        result.push(node);
+      }
+    }
+    return result;
+  }
+};
 ExtendedPMX.Bone.IKInfo = class IKInfo extends PMX.Bone.IKInfo {};
 ExtendedPMX.Bone.IKInfo.Link = class Link extends PMX.Bone.IKInfo.Link {};
 ExtendedPMX.Bone.Addition = class Addition extends PMX.Bone.Addition {};

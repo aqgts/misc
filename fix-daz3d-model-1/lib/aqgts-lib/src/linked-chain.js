@@ -17,11 +17,15 @@ const _tail = Symbol("tail");
 const _index = Symbol("index");
 const _push = Symbol("push");
 const _reverse = Symbol("reverse");
+const _splice = Symbol("splice");
 const _unshift = Symbol("unshift");
+const _slice = Symbol("slice");
 const _entries = Symbol("entries");
+const _clear = Symbol("clear");
 const _delete = Symbol("delete");
 const _has = Symbol("has");
 const _iterator = Symbol("iterator");
+const _move = Symbol("move");
 export default class LinkedChain {
   constructor(iterable = null) {
     this[_length] = 0;
@@ -96,7 +100,29 @@ export default class LinkedChain {
     this[_delete](result);
     return result;
   }
+  sort(...args) {
+    const values = [...this[_iterator]()];
+    this[_clear]();
+    values.sort(...args);
+    // avoid stack overflow
+    for (let i = 0; i < values.length; i += 2048) {
+      this[_push](...values.slice(i, i + 2048));
+    }
+    return this;
+  }
+  sortBy(iteratee) {
+    return this.sort((x, y) => {
+      const x2 = iteratee.call(this, x);
+      const y2 = iteratee.call(this, y);
+      if (x2 > y2) return 1;
+      else if (x2 < y2) return -1;
+      return 0;
+    });
+  }
   splice(targetValue, howMany, ...newValues) {
+    return this[_splice](targetValue, howMany, ...newValues);
+  }
+  [_splice](targetValue, howMany, ...newValues) {
     if (!this[_has](targetValue)) return this;
 
     const deleteValueSet = new Set();
@@ -190,9 +216,12 @@ export default class LinkedChain {
     }).bind(this)());
   }
   slice(targetValue, includes, howMany = this[_length]) {
+    return this[_slice](targetValue, includes, howMany);
+  }
+  [_slice](targetValue, includes, howMany = this[_length]) {
     if (!this[_has](targetValue)) return new LinkedChain();
     
-    if (1 / howMany > 0) {
+    if (howMany === Infinity || (Number.isFinite(howMany) && 1 / howMany > 0)) {
       return new LinkedChain((function *() {
         if (includes) yield targetValue;
         for (let node = this[_index].get(targetValue).next, i = 0; node !== null && i < howMany; node = node.next, i++) {
@@ -301,6 +330,9 @@ export default class LinkedChain {
     }
   }
   clear() {
+    return this[_clear]();
+  }
+  [_clear]() {
     this[_length] = 0;
     this[_head] = null;
     this[_tail] = null;
@@ -334,5 +366,22 @@ export default class LinkedChain {
     for (let node = this[_head]; node !== null; node = node.next) {
       yield node.value;
     }
+  }
+  move(targetValue, offset) {
+    return this[_move](targetValue, offset);
+  }
+  [_move](targetValue, offset) {
+    if (!this[_has](targetValue)) return this;
+
+    if (offset > 0) {
+      const guide = this[_slice](targetValue, false, offset).tail();
+      if (guide !== undefined) {
+        this[_delete](targetValue);
+        this[_splice](guide, +0, targetValue);
+      }
+    } else if (offset < 0) {
+      this[_reverse]()[_move](targetValue, -offset)[_reverse]();
+    }
+    return this;
   }
 }

@@ -77,7 +77,7 @@ describe("Polygon", () => {
       expect(_.zip(actualIntersections, expectedIntersections).every(([actual, expected]) => actual.equals(expected))).toBe(true);
     }
   });
-  it("subtract", () => {
+  it("subtract(Polygon)", () => {
     const polygon1 = new Polygon(
       new Vector2(0, 1),
       new Vector2(3, 4),

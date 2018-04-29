@@ -58,11 +58,12 @@ export default class TextAreaWrapper {
       this.registeredMessage = message;
       this.registeredCount = count;
       this.registeredIndex = 0;
-      this.append(`${message}(0%)`);
+      this.append(`${message}(0.0%)`);
       return true;
     } else if (arguments.length === 0) {
       this.registeredIndex++;
-      return this.update(`${this.registeredMessage}(${Math.floor(this.registeredIndex / this.registeredCount * 1000) / 10}%)`);
+      const progressRate = Math.floor(this.registeredIndex / this.registeredCount * 1000) / 10;
+      return this.update(`${this.registeredMessage}(${Number.isInteger(progressRate) ? `${progressRate}.0` : progressRate}%)`);
     }
   }
   progressAsync(...args) {

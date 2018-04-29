@@ -1,6 +1,6 @@
 {
   "name": "aqgts-lib",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-alpha.2",
   "description": "My common library for my products",
   "private": true,
   "scripts": {
@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "base64-js": "^1.2.3",
+    "color": "^3.0.0",
     "mime": "^2.2.0",
     "uuid": "^3.2.1"
   }

@@ -14,6 +14,9 @@ export default class Line3D {
   equals(other) {
     return this === other || (this.contains(other.a) && this.contains(other.a.add(other.d)));
   }
+  toString() {
+    return `${this.a.toString()} + t * ${this.d.toString()}`;
+  }
   static through(p1, p2) {
     if (p1.equals(p2)) throw new Error("p1 is identical to p2");
     return new this(p1, p2.subtract(p1));

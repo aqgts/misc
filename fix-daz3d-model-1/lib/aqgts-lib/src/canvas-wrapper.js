@@ -25,10 +25,10 @@ export default class CanvasWrapper {
   draw(option = {}) {
     const points = _.flatMap(this.lines, line => line.points).concat(_.flatMap(this.bezierCurves, bezierCurve => bezierCurve.bezierCurve.controlPoints));
     if (points.length === 0) return;
-    const dataMinX = points.map(point => point.x).reduce(Math.min, Infinity);
-    const dataMaxX = points.map(point => point.x).reduce(Math.max, -Infinity);
-    const dataMinY = points.map(point => point.y).reduce(Math.min, Infinity);
-    const dataMaxY = points.map(point => point.y).reduce(Math.max, -Infinity);
+    const dataMinX = points.map(point => point.x).reduce((x, y) => Math.min(x, y), Infinity);
+    const dataMaxX = points.map(point => point.x).reduce((x, y) => Math.max(x, y), -Infinity);
+    const dataMinY = points.map(point => point.y).reduce((x, y) => Math.min(x, y), Infinity);
+    const dataMaxY = points.map(point => point.y).reduce((x, y) => Math.max(x, y), -Infinity);
     const minX = "minX" in option
       ? option.minX
       : "minX" in this

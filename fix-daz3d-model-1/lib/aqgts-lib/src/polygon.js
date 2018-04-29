@@ -4,9 +4,10 @@ import Line2D from "./line-2d";
 import Rectangle from "./rectangle";
 import MyMath from "./my-math";
 import Matrix from "./matrix";
+import HalfUniverse2D from "./half-universe-2d";
 
 export default class Polygon {
-  constructor(...points) { // 起点と終点は同一要素にしなくてよい
+  constructor(...points) { // 起点と終点は同一要素ではない
     if (points.length < 3) throw new Error("Polygon must have three or more vertices.");
     if (!points.every(point => point instanceof Vector2)) throw new Error("points must be Vector2 array.");
     this.points = points;
@@ -67,6 +68,9 @@ export default class Polygon {
       if (i === otherPoints.length) return false;
     }
     return new Array(otherPoints.length).fill().every((_, i) => this.points[i].equals(otherPoints[i]));
+  }
+  toString() {
+    return `${this.constructor.name} { ${this.points.map(point => point.toString()).join(", ")} }`;
   }
   _createSkeleton(other) {
     const thisVertices = this.points.map(point => ({
@@ -329,6 +333,10 @@ export class Triangle2D extends Polygon {
     if (points.length !== 3 || points[0].equals(points[1]) || points[1].equals(points[2]) || points[2].equals(points[0])) throw new Error("Triangle must have three different vertices.");
     super(...points);
   }
+  contains(p) {
+    const blendRates = this.blendRates(p);
+    return blendRates.every(blendRate => 0 <= blendRate && blendRate <= 1);
+  }
   blendRates(p) {
     const uv = Matrix.fromColumnVectors(this.points[1].subtract(this.points[0]), this.points[2].subtract(this.points[0])).inverse().multiply(p.subtract(this.points[0]));
     return [1 - uv.x - uv.y, uv.x, uv.y];
@@ -413,6 +421,116 @@ export class Triangle2D extends Polygon {
       }
     } else {
       super.intersection(other);
+    }
+  }
+  subtract(other) {
+    if (other instanceof HalfUniverse2D) {
+      const state = this.points
+        .map(point => point.subtract(other.line.projection(point)).innerProduct(other.normal))
+        .map(innerProduct => innerProduct > 0 ? "+" : innerProduct < 0 ? "-" : "0")
+        .join("");
+      switch (state) {
+      case "000":
+        throw new Error("Invalid triangle");
+      case "+++":
+      case "0++":
+      case "+0+":
+      case "++0":
+      case "+00":
+      case "0+0":
+      case "00+":
+        return [this];
+      case "---":
+      case "0--":
+      case "-0-":
+      case "--0":
+      case "-00":
+      case "0-0":
+      case "00-":
+        return [];
+      }
+      const intersections = this.lineSegments().map(lineSegment => lineSegment.intersection(other.line)).map(intersection => intersection.length === 0 ? null : intersection[0]);
+      if (intersections.findIndex(intersection => intersection instanceof DirectedLineSegment2D) > -1) throw new Error("Invalid triangle");
+      switch (intersections.filter(intersection => intersection !== null).length) {
+      case 3:
+        if (intersections[0].equals(intersections[1])) { // 点1から辺(2,0)
+          switch (state) {
+          case "+0-":
+            return [new Polygon(this.points[0], this.points[1], intersections[2])];
+          case "-0+":
+            return [new Polygon(this.points[1], this.points[2], intersections[2])];
+          default:
+            throw new Error("Invalid triangle");
+          }
+        } else if (intersections[1].equals(intersections[2])) { // 辺(0,1)から点2
+          switch (state) {
+          case "+-0":
+            return [new Polygon(this.points[0], intersections[0], this.points[2])];
+          case "-+0":
+            return [new Polygon(intersections[0], this.points[1], this.points[2])];
+          default:
+            throw new Error("Invalid triangle");
+          }
+        } else if (intersections[2].equals(intersections[0])) { // 点0から辺(1,2)
+          switch (state) {
+          case "0+-":
+            return [new Polygon(this.points[0], this.points[1], intersections[1])];
+          case "0-+":
+            return [new Polygon(this.points[0], intersections[1], this.points[2])];
+          default:
+            throw new Error("Invalid triangle");
+          }
+        } else {
+          throw new Error("Invalid triangle");
+        }
+      case 2:
+        if (intersections[0] === null) {
+          if (intersections[1].equals(intersections[2])) { // 点2に接する
+            throw new Error("Invalid triangle");
+          } else { // 辺(1,2)から辺(2,0)
+            switch (state) {
+            case "++-":
+              return [new Polygon(this.points[0], this.points[1], intersections[1], intersections[2])];
+            case "--+":
+              return [new Polygon(intersections[1], this.points[2], intersections[2])];
+            default:
+              throw new Error("Invalid triangle");
+            }
+          }
+        } else if (intersections[1] === null) {
+          if (intersections[2].equals(intersections[0])) { // 点0に接する
+            throw new Error("Invalid triangle");
+          } else { // 辺(0,1)から辺(2,0)
+            switch (state) {
+            case "+--":
+              return [new Polygon(this.points[0], intersections[0], intersections[2])];
+            case "-++":
+              return [new Polygon(intersections[0], this.points[1], this.points[2], intersections[2])];
+            default:
+              throw new Error("Invalid triangle");
+            }
+          }
+        } else if (intersections[2] === null) {
+          if (intersections[0].equals(intersections[1])) { // 点1に接する
+            throw new Error("Invalid triangle");
+          } else { // 辺(0,1)から辺(1,2)
+            switch (state) {
+            case "+-+":
+              return [new Polygon(this.points[0], intersections[0], intersections[1], this.points[2])];
+            case "-+-":
+              return [new Polygon(intersections[0], this.points[1], intersections[1])];
+            default:
+              throw new Error("Invalid triangle");
+            }
+          }
+        } else {
+          throw new Error("Invalid triangle");
+        }
+      default:
+        throw new Error("Invalid triangle");
+      }
+    } else {
+      super.subtract(other);
     }
   }
 }

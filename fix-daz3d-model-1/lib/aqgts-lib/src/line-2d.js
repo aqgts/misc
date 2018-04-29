@@ -46,6 +46,14 @@ export default class Line2D {
   subtract(other) {
     return this.equals(other) ? [] : [this];
   }
+  projection(other) {
+    if (other instanceof Vector2) {
+      const n = new Vector2(this.a, this.b);
+      return other.subtract(n.multiply((other.innerProduct(n) + this.c) / n.squaredNorm()));
+    } else {
+      throw new Error("Unknown type");
+    }
+  }
   equals(other) {
     return this === other || (this.b * other.c === this.c * other.b && this.c * other.a === this.a * other.c && this.a * other.b === this.b * other.a);
   }

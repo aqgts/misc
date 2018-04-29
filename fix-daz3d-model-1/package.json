@@ -1,14 +1,13 @@
 {
   "name": "misc-fix-daz3d-model-1",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Fix the model exported from DAZ Studio (Phase 1)",
   "private": true,
   "scripts": {
-    "build": "browserify src/index.main.js --debug -t babelify | exorcist dist/index.main.js.map >dist/index.main.js",
-    "build:continuous": "watchify src/index.main.js -v --debug -t babelify -o 'exorcist dist/index.main.js.map >dist/index.main.js'",
-    "build:release": "browserify src/index.main.js -t babelify | uglifyjs --compress --output dist/index.main.js",
-    "build:test": "babel . -d dist --ignore node_modules,dist --source-maps",
-    "test": "npm run build:test && jasmine-node dist/spec",
+    "auto-generate": "node lib/aqgts-lib/tools/build-test-helper.js && node lib/aqgts-lib/tools/build-html.js && browserify src/global/pre-cdn.js -t babelify | uglifyjs -c -o dist/pre-cdn.js && browserify src/global/post-cdn.js -t babelify | uglifyjs -c -o dist/post-cdn.js",
+    "build": "npm run auto-generate && browserify src/global/index.main.js -d -t babelify -o dist/index.main.js",
+    "build:watch": "watchify src/global/index.main.js -v -d -t babelify -o dist/index.main.js",
+    "build:release": "npm run auto-generate && browserify src/global/index.main.js -t babelify | uglifyjs -c -o dist/index.main.js",
     "clean": "git clean -X -d -f"
   },
   "repository": {
@@ -22,20 +21,30 @@
   },
   "homepage": "https://github.com/aqgts/misc",
   "engines": {
-    "node": "^9.1.0"
+    "node": "^9.5.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-plugin-istanbul": "^4.1.5",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "babelify": "^8.0.0",
-    "browserify": "^14.5.0",
-    "exorcist": "^1.0.0",
-    "jasmine-node": "^1.14.5",
-    "lodash": "^4.17.4",
-    "mathjs": "^3.16.5",
-    "text-encoding": "^0.6.4",
-    "uglify-js": "^3.1.9",
-    "watchify": "^3.9.0"
+    "browserify": "^16.1.0",
+    "jasmine-core": "^2.99.1",
+    "karma": "^2.0.0",
+    "karma-browserify": "^5.2.0",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-coverage": "^1.1.1",
+    "karma-jasmine": "^1.1.1",
+    "karma-spec-reporter": "0.0.32",
+    "mustache": "^2.3.0",
+    "uglify-js": "^3.3.12",
+    "watchify": "^3.10.0"
+  },
+  "dependencies": {
+    "base64-js": "^1.2.3",
+    "color": "^3.0.0",
+    "mime": "^2.2.0",
+    "uuid": "^3.2.1"
   }
 }

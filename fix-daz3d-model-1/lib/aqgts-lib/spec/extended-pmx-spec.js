@@ -1,7 +1,7 @@
 import BinaryUtils from "../src/binary-utils";
 import ExtendedPMX from "../src/extended-pmx";
 
-describe("ExtendedPMX", () => {
+xdescribe("ExtendedPMX", () => {
   let inputUint8Array;
   beforeAll(async () => {
     inputUint8Array = await BinaryUtils.readBinaryFromFilePathAsync("base/spec/resources/Yo_Miku_Ver1.3.0/Yo_Miku_Ver1.3.0_Normal.pmx");
